@@ -63,7 +63,7 @@ bool convertGCIFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileT
 	return 1;
 }
 
-bool readGCIFile(GCIFile *data, char *inFileName) {
+bool readGCIFile(GCIFile *data, const char *inFileName) {
 	assert(data != NULL);
 	assert(inFileName != NULL);
 
@@ -82,7 +82,7 @@ bool readGCIFile(GCIFile *data, char *inFileName) {
 	return bytesRead == GCI_FILE_SIZE;
 }
 
-bool writeGCIFile(GCIFile *data, char *outFileName) {
+bool writeGCIFile(GCIFile *data, const char *outFileName) {
 	assert(data != NULL);
 	assert(outFileName != NULL);
 
@@ -100,27 +100,4 @@ bool writeGCIFile(GCIFile *data, char *outFileName) {
 
 	fclose(output);
 	return bytesWritten == GCI_FILE_SIZE;
-}
-
-void initGCIMeta(GCIMeta *meta, const char *fileName, GCIFileType fileType, uint32_t initChecksum) {
-	/* destroyGCIMeta(meta); */
-	meta = malloc(sizeof(GCIMeta));
-	assert(meta != NULL);
-	meta->fileName = strdup(fileName);
-	meta->fileType = fileType;
-	meta->initChecksum = initChecksum;
-	meta->file = malloc(GCI_FILE_SIZE);
-	assert(meta->fileName != NULL && meta->file != NULL);
-}
-
-void destroyGCIMeta(GCIMeta *meta) {
-	if (meta != NULL) {
-		if (meta->fileName != NULL) {
-			free(meta->fileName);
-		}
-		if (meta->file != NULL) {
-			free(meta->file);
-		}
-		free(meta);
-	}
 }

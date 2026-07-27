@@ -31,20 +31,10 @@ typedef struct {
 static_assert(sizeof(GCIBlock) == GCI_BLOCK_SIZE);
 static_assert(sizeof(GCIFile) == GCI_FILE_SIZE);
 
-typedef struct {
-	char *fileName;
-	GCIFileType fileType;
-	uint32_t initChecksum;
-	GCIFile *file;
-} GCIMeta;
-
 bool convertGCIBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType);
 bool convertGCIFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType);
 
-bool readGCIFile(GCIFile *data, char *inFileName);
-bool writeGCIFile(GCIFile *data, char *outFileName);
-
-void initGCIMeta(GCIMeta *meta, const char *fileName, GCIFileType fileType, uint32_t initChecksum);
-void destroyGCIMeta(GCIMeta *meta);
+bool readGCIFile(GCIFile *data, const char *inFileName);
+bool writeGCIFile(GCIFile *data, const char *outFileName);
 
 #endif

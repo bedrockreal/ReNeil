@@ -1,10 +1,13 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include "gci_pair.hpp"
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_sdl3.h"
 #include "imgui/backends/imgui_impl_sdlrenderer3.h"
 
 #include <cassert>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -13,10 +16,11 @@
 
 #include "sdl_utils.hpp"
 extern "C" {
+#include "gba_data.h"
 #include "gci.h"
 }
 
-GCIFile encodedGCIFile, decodedGCIFile;
+#define GBA_OFFSET_PAL	0x9c78
 
 void handleInvalidArgs(char *programName) {
 	fprintf(stderr, "Usage:\t%s\n\t\t%s d|e <infile> <outfile> [init_checksum]\n", programName, programName);
@@ -103,8 +107,10 @@ int main(int argc, char** argv) {
 		bool isDecodedGCIActive = 0;
 	} appState;
 
-	// GCI objects
-	GCIMeta *encodedGCIMeta, *decodedGCIMeta;
+	// save data-related
+	GCIPair activeGCIPair;
+	std::vector<uint8_t> activeGBAPairs;
+	GBASavePair *activeGBATabs[4] = {nullptr, nullptr, nullptr, nullptr};
 
     while (appState.running) {
 		SDL_Event event;
@@ -128,18 +134,11 @@ int main(int argc, char** argv) {
                     const std::string p = dialogState.selectedPath;
 
 					// read and decode GCI
-					destroyGCIMeta(encodedGCIMeta);
-					initGCIMeta(encodedGCIMeta, p.c_str(), GCI_FILE_TYPE_ENCODED, initChecksum);
-					if (readGCIFile(encodedGCIMeta->file, encodedGCIMeta->fileName)) {
-						destroyGCIMeta(decodedGCIMeta);
-						initGCIMeta(decodedGCIMeta, p.c_str(), GCI_FILE_TYPE_DECODED, initChecksum);
-						if (convertGCIFile(decodedGCIMeta->file, encodedGCIMeta->file, encodedGCIMeta->initChecksum, encodedGCIMeta->fileType)) {
-							appState.isDecodedGCIActive = 1;
-							status = "Decoded: " + p;
-						} else {
-							status = "Failed to decode: " + p;
-						}
+					activeGCIPair.init(p, initChecksum);
+					if (activeGCIPair.isInitSuccess()) {
 						status = "Opened: " + p;
+						activeGBAPairs = activeGCIPair.getDecodedData(GBA_OFFSET_PAL, GBA_CLUB_DATA_SIZE * MAX_GBA_SAVE_PAIRS);
+						// printf("%c%c%c%c\n", activeGBAPairs[0x10], activeGBAPairs[0x11], activeGBAPairs[0x12], activeGBAPairs[0x13]);
 					} else {
                         status = "Failed to open: " + p;
                     }
@@ -158,7 +157,7 @@ int main(int argc, char** argv) {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("New", "Ctrl+N")) { /* Handle action */ }
+				// if (ImGui::MenuItem("New", "Ctrl+N")) { /* Handle action */ }
 				if (ImGui::MenuItem("Open", "Ctrl+O")) {
 					if (!appState.openDialogPending) {
 						appState.openDialogPending = true;
@@ -195,6 +194,7 @@ int main(int argc, char** argv) {
 			ImGui::EndMainMenuBar();
 		}
 
+		// TODO: display GBA save data of loaded GCI file.
 
         // Render
         ImGui::Render();
@@ -213,7 +213,5 @@ int main(int argc, char** argv) {
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-	destroyGCIMeta(encodedGCIMeta);
-	destroyGCIMeta(decodedGCIMeta);
     return 0;
 }
