@@ -4,6 +4,8 @@ CC	:= gcc
 CXX	:= g++
 
 CFLAGS		:= -std=c23
+CXXFLAGS	:= -std=c++17
+LDFLAGS		:= -lSDL3 -Llib -limgui
 
 TARGET_EXEC := final_program
 
@@ -23,7 +25,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 # Every folder in ./src will need to be passed to GCC so that it can find header files
-INC_DIRS := include
+INC_DIRS := include include/imgui include/imgui/backends
 # Add a prefix to INC_DIRS. So moduleA would become -ImoduleA. GCC understands this -I flag
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 

@@ -4,10 +4,17 @@
 #include "imgui/backends/imgui_impl_sdl3.h"
 #include "imgui/backends/imgui_impl_sdlrenderer3.h"
 
-#include <fstream>
+#include <mutex>
 #include <string>
 #include <iostream>
 #include <optional>
+
+#include "sdl_utils.hpp"
+extern "C" {
+#include "gci.h"
+}
+
+GCISaveFile encodedGCIFile, decodedGCIFile;
 
 int main(int, char**) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
@@ -43,20 +50,53 @@ int main(int, char**) {
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
-    bool running = true;
+	bool running = true;
+    bool openDialogPending = false;
+
+    FileDialogState dialogState;
     std::optional<std::string> openedPath;
     std::string fileContent;
     std::string status = "No file opened.";
 
-    // Fallback manual path input (in case you don't use SDL dialog API)
-    static char pathBuffer[1024] = "";
+    // Optional filters
+    SDL_DialogFileFilter filters[] = {
+        { "GameCube save file (.gci)", "gci" },
+        { "All files", "*" }
+    };
 
     while (running) {
-        SDL_Event event;
+		SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
+            }
+        }
+
+        // Consume dialog callback result (if any), safely
+        {
+            std::lock_guard<std::mutex> lock(dialogState.mtx);
+            if (dialogState.hasResult) {
+                dialogState.hasResult = false;
+                openDialogPending = false;
+
+                if (dialogState.canceled) {
+                    status = "Open file canceled.";
+                } else if (!dialogState.selectedPath.empty()) {
+                    const std::string p = dialogState.selectedPath;
+					// TODO
+                    // std::string content = ReadTextFile(p);
+
+                    // if (!content.empty() || std::ifstream(p).good()) {
+                    //     openedPath = p;
+                    //     fileContent = std::move(content);
+                    //     status = "Opened: " + p;
+                    // } else {
+                    //     status = "Failed to open: " + p;
+                    // }
+                } else {
+                    status = "No file selected.";
+                }
             }
         }
 
@@ -65,50 +105,47 @@ int main(int, char**) {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("File Controller");
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("New", "Ctrl+N")) { /* Handle action */ }
+				if (ImGui::MenuItem("Open", "Ctrl+O")) {
+					if (!openDialogPending) {
+						openDialogPending = true;
+						status = "Opening native file dialog...";
 
-        ImGui::TextWrapped("Simple Open/Close file demo.");
+						// Asynchronous native open dialog
+						// Parameters:
+						// callback, userdata, parent window, filters, num filters,
+						// default location, allow_many
+						SDL_ShowOpenFileDialog(
+							OpenFileDialogCallback,
+							&dialogState,
+							window,
+							filters,
+							static_cast<int>(SDL_arraysize(filters)),
+							nullptr,
+							false
+						);
+					} else {
+						status = "Dialog already open/pending.";
+					}
+				}
+				if (ImGui::MenuItem("Save", "Ctrl+S")) {}
+			if (ImGui::MenuItem("Save As..")) {}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Exit", "Ctrl+Q")) { /* Handle action */ }
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Edit"))
+			{
+				if (ImGui::MenuItem("Undo", "Ctrl+Z")) { /* Handle action */ }
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
+		}
 
-        // -------- Option A: manual path input + Open --------
-        ImGui::InputText("Path", pathBuffer, sizeof(pathBuffer));
-        if (ImGui::Button("Open File")) {
-            std::string p = pathBuffer;
-            if (!p.empty()) {
-                std::string content = ReadTextFile(p);
-                if (!content.empty() || std::ifstream(p).good()) {
-                    openedPath = p;
-                    fileContent = std::move(content);
-                    status = "Opened: " + p;
-                } else {
-                    status = "Failed to open file: " + p;
-                }
-            } else {
-                status = "Please enter a path first.";
-            }
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Close File")) {
-            openedPath.reset();
-            fileContent.clear();
-            status = "File closed.";
-        }
-
-        ImGui::Separator();
-        ImGui::Text("Status: %s", status.c_str());
-
-        if (openedPath.has_value()) {
-            ImGui::Text("Current file: %s", openedPath->c_str());
-            ImGui::Separator();
-            ImGui::Text("Content preview:");
-            ImGui::BeginChild("preview", ImVec2(0, 300), true);
-            ImGui::TextUnformatted(fileContent.c_str());
-            ImGui::EndChild();
-        } else {
-            ImGui::TextDisabled("No file currently open.");
-        }
-
-        ImGui::End();
 
         // Render
         ImGui::Render();
