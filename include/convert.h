@@ -1,5 +1,5 @@
-#ifndef MGTT_CONVERT_H
-#define MGTT_CONVERT_H
+#ifndef RENEIL_CONVERT_H
+#define RENEIL_CONVERT_H
 
 #include <assert.h>
 #include <stdbool.h>
