@@ -102,7 +102,8 @@ bool writeGCIFile(GCIFile *data, char *outFileName) {
 	return bytesWritten == GCI_FILE_SIZE;
 }
 
-void initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum) {
+void initGCIMeta(GCIMeta *meta, const char *fileName, GCIFileType fileType, uint32_t initChecksum) {
+	/* destroyGCIMeta(meta); */
 	meta = malloc(sizeof(GCIMeta));
 	assert(meta != NULL);
 	meta->fileName = strdup(fileName);
@@ -113,7 +114,13 @@ void initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t i
 }
 
 void destroyGCIMeta(GCIMeta *meta) {
-	free(meta->fileName);
-	free(meta->file);
-	free(meta);
+	if (meta != NULL) {
+		if (meta->fileName != NULL) {
+			free(meta->fileName);
+		}
+		if (meta->file != NULL) {
+			free(meta->file);
+		}
+		free(meta);
+	}
 }

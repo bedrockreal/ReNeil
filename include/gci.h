@@ -1,5 +1,5 @@
-#ifndef RENEIL_GCI_CONVERT_H
-#define RENEIL_GCI_CONVERT_H
+#ifndef RENEIL_GCI_H
+#define RENEIL_GCI_H
 
 #include <assert.h>
 #include <stdbool.h>
@@ -44,7 +44,7 @@ bool convertGCIFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileT
 bool readGCIFile(GCIFile *data, char *inFileName);
 bool writeGCIFile(GCIFile *data, char *outFileName);
 
-void initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum);
+void initGCIMeta(GCIMeta *meta, const char *fileName, GCIFileType fileType, uint32_t initChecksum);
 void destroyGCIMeta(GCIMeta *meta);
 
 #endif

@@ -19,18 +19,18 @@ extern "C" {
 GCIFile encodedGCIFile, decodedGCIFile;
 
 void handleInvalidArgs(char *programName) {
-	fprintf(stderr, "Usage:\t %s\n\t\t%s d|e <infile> <outfile> [init_checksum]\n", programName, programName);
+	fprintf(stderr, "Usage:\t%s\n\t\t%s d|e <infile> <outfile> [init_checksum]\n", programName, programName);
 	exit(1);
 }
 
 int main(int argc, char** argv) {
+	uint32_t initChecksum = 0x12345678;
 	if (argc != 1) {
 		// CLI Mode
 		if (argc < 4 || argc > 5) {
 			handleInvalidArgs(argv[0]);
 		}
 
-		uint32_t initChecksum = 0x12345678;
 		if (argc == 5) {
 			initChecksum = (uint32_t)strtol(argv[4], NULL, 16);
 		}
@@ -85,9 +85,6 @@ int main(int argc, char** argv) {
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
-	bool running = true;
-    bool openDialogPending = false;
-
     FileDialogState dialogState;
     std::optional<std::string> openedPath;
     std::string fileContent;
@@ -99,12 +96,22 @@ int main(int argc, char** argv) {
         { "All files", "*" }
     };
 
-    while (running) {
+	// set up application state
+	struct {
+		bool running = 1;
+		bool openDialogPending = 0;
+		bool isDecodedGCIActive = 0;
+	} appState;
+
+	// GCI objects
+	GCIMeta *encodedGCIMeta, *decodedGCIMeta;
+
+    while (appState.running) {
 		SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_QUIT) {
-                running = false;
+                appState.running = false;
             }
         }
 
@@ -113,22 +120,29 @@ int main(int argc, char** argv) {
             std::lock_guard<std::mutex> lock(dialogState.mtx);
             if (dialogState.hasResult) {
                 dialogState.hasResult = false;
-                openDialogPending = false;
+                appState.openDialogPending = false;
 
                 if (dialogState.canceled) {
                     status = "Open file canceled.";
                 } else if (!dialogState.selectedPath.empty()) {
                     const std::string p = dialogState.selectedPath;
-					// TODO
-                    // std::string content = ReadTextFile(p);
 
-                    // if (!content.empty() || std::ifstream(p).good()) {
-                    //     openedPath = p;
-                    //     fileContent = std::move(content);
-                    //     status = "Opened: " + p;
-                    // } else {
-                    //     status = "Failed to open: " + p;
-                    // }
+					// read and decode GCI
+					destroyGCIMeta(encodedGCIMeta);
+					initGCIMeta(encodedGCIMeta, p.c_str(), GCI_FILE_TYPE_ENCODED, initChecksum);
+					if (readGCIFile(encodedGCIMeta->file, encodedGCIMeta->fileName)) {
+						destroyGCIMeta(decodedGCIMeta);
+						initGCIMeta(decodedGCIMeta, p.c_str(), GCI_FILE_TYPE_DECODED, initChecksum);
+						if (convertGCIFile(decodedGCIMeta->file, encodedGCIMeta->file, encodedGCIMeta->initChecksum, encodedGCIMeta->fileType)) {
+							appState.isDecodedGCIActive = 1;
+							status = "Decoded: " + p;
+						} else {
+							status = "Failed to decode: " + p;
+						}
+						status = "Opened: " + p;
+					} else {
+                        status = "Failed to open: " + p;
+                    }
                 } else {
                     status = "No file selected.";
                 }
@@ -146,8 +160,8 @@ int main(int argc, char** argv) {
 			{
 				if (ImGui::MenuItem("New", "Ctrl+N")) { /* Handle action */ }
 				if (ImGui::MenuItem("Open", "Ctrl+O")) {
-					if (!openDialogPending) {
-						openDialogPending = true;
+					if (!appState.openDialogPending) {
+						appState.openDialogPending = true;
 						status = "Opening native file dialog...";
 
 						// Asynchronous native open dialog
@@ -198,5 +212,8 @@ int main(int argc, char** argv) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+	destroyGCIMeta(encodedGCIMeta);
+	destroyGCIMeta(decodedGCIMeta);
     return 0;
 }
