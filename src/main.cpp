@@ -4,6 +4,8 @@
 #include "imgui/backends/imgui_impl_sdl3.h"
 #include "imgui/backends/imgui_impl_sdlrenderer3.h"
 
+#include <cassert>
+#include <cstring>
 #include <mutex>
 #include <string>
 #include <iostream>
@@ -16,7 +18,40 @@ extern "C" {
 
 GCIFile encodedGCIFile, decodedGCIFile;
 
-int main(int, char**) {
+void handleInvalidArgs(char *programName) {
+	fprintf(stderr, "Usage:\t %s\n\t\t%s d|e <infile> <outfile> [init_checksum]\n", programName, programName);
+	exit(1);
+}
+
+int main(int argc, char** argv) {
+	if (argc != 1) {
+		// CLI Mode
+		if (argc < 4 || argc > 5) {
+			handleInvalidArgs(argv[0]);
+		}
+
+		uint32_t initChecksum = 0x12345678;
+		if (argc == 5) {
+			initChecksum = (uint32_t)strtol(argv[4], NULL, 16);
+		}
+
+		GCIFileType srcFileType;
+		if (strcmp(argv[1], "d") == 0) {
+			srcFileType = GCI_FILE_TYPE_ENCODED;
+		} else if (strcmp(argv[1], "e") == 0) {
+			srcFileType = GCI_FILE_TYPE_DECODED;
+		} else {
+			handleInvalidArgs(argv[0]);
+		}
+
+		GCIFile srcFile, destFile;
+		assert(readGCIFile(&srcFile, argv[2]));
+		assert(convertGCIFile(&destFile, &srcFile, initChecksum, srcFileType));
+		assert(writeGCIFile(&destFile, argv[3]));
+
+		return 0;
+	}
+
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
         std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
         return 1;

@@ -38,13 +38,13 @@ typedef struct {
 	GCIFile *file;
 } GCIMeta;
 
-bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType);
-bool convertFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType);
+bool convertGCIBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType);
+bool convertGCIFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType);
 
 bool readGCIFile(GCIFile *data, char *inFileName);
 bool writeGCIFile(GCIFile *data, char *outFileName);
 
-bool initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum);
+void initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum);
 void destroyGCIMeta(GCIMeta *meta);
 
 #endif

@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType) {
+bool convertGCIBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType) {
 	assert(srcGCIBlock != NULL);
 	assert(destGCIBlock != NULL);
 	destGCIBlock->xorKey = srcGCIBlock->xorKey;
@@ -44,7 +44,7 @@ bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *check
 	}
 }
 
-bool convertFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType) {
+bool convertGCIFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType) {
 	assert(dest != NULL);
 	assert(src != NULL);
 	memcpy(dest->header, src->header, HEADER_SIZE);
@@ -55,7 +55,7 @@ bool convertFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType
 		if (2 * i == GCI_NUM_BLOCKS - 1) {
 			checksum = initChecksum;
 		}
-		if (convertBlock(&dest->gameBlocks[i], &src->gameBlocks[i], &checksum, srcFileType) == 0) {
+		if (convertGCIBlock(&dest->gameBlocks[i], &src->gameBlocks[i], &checksum, srcFileType) == 0) {
 			return 0;
 		}
 	}
@@ -102,16 +102,18 @@ bool writeGCIFile(GCIFile *data, char *outFileName) {
 	return bytesWritten == GCI_FILE_SIZE;
 }
 
-bool initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum) {
+void initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum) {
+	meta = malloc(sizeof(GCIMeta));
+	assert(meta != NULL);
 	meta->fileName = strdup(fileName);
 	meta->fileType = fileType;
 	meta->initChecksum = initChecksum;
 	meta->file = malloc(GCI_FILE_SIZE);
 	assert(meta->fileName != NULL && meta->file != NULL);
-	return readGCIFile(meta->file, meta->fileName);
 }
 
 void destroyGCIMeta(GCIMeta *meta) {
 	free(meta->fileName);
 	free(meta->file);
+	free(meta);
 }
