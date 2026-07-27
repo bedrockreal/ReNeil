@@ -12,9 +12,9 @@
 #define GCI_FILE_SIZE (HEADER_SIZE + GCI_NUM_BLOCKS * GCI_BLOCK_SIZE)
 
 typedef enum {
-	DECODE,
-	ENCODE
-} ConvertMode;
+	GCI_FILE_TYPE_DECODED,
+	GCI_FILE_TYPE_ENCODED
+} GCIFileType;
 
 typedef struct {
 	uint32_t xorKey;
@@ -23,20 +23,28 @@ typedef struct {
 } GCIBlock;
 
 typedef struct {
-	/* char *fileName; */
-	/* int globalKey; */
 	uint8_t header[HEADER_SIZE];
 	uint8_t systemBlock[GCI_BLOCK_SIZE];
 	GCIBlock gameBlocks[GCI_NUM_BLOCKS - 1];
-} GCISaveFile;
+} GCIFile;
 
 static_assert(sizeof(GCIBlock) == GCI_BLOCK_SIZE);
-static_assert(sizeof(GCISaveFile) == GCI_FILE_SIZE);
+static_assert(sizeof(GCIFile) == GCI_FILE_SIZE);
 
-bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, ConvertMode mode);
-bool convertFile(GCISaveFile *dest, GCISaveFile *src, uint32_t initChecksum, ConvertMode mode);
+typedef struct {
+	char *fileName;
+	GCIFileType fileType;
+	uint32_t initChecksum;
+	GCIFile *file;
+} GCIMeta;
 
-bool readGCIFile(GCISaveFile *data, char *inFileName);
-bool writeGCIFile(GCISaveFile *data, char *outFileName);
+bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType);
+bool convertFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType);
+
+bool readGCIFile(GCIFile *data, char *inFileName);
+bool writeGCIFile(GCIFile *data, char *outFileName);
+
+bool initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum);
+void destroyGCIMeta(GCIMeta *meta);
 
 #endif

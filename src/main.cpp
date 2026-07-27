@@ -14,7 +14,7 @@ extern "C" {
 #include "gci.h"
 }
 
-GCISaveFile encodedGCIFile, decodedGCIFile;
+GCIFile encodedGCIFile, decodedGCIFile;
 
 int main(int, char**) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {

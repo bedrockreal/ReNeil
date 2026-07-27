@@ -8,9 +8,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, ConvertMode mode) {
+bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType) {
 	assert(srcGCIBlock != NULL);
 	assert(destGCIBlock != NULL);
 	destGCIBlock->xorKey = srcGCIBlock->xorKey;
@@ -20,7 +21,8 @@ bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *check
 		destGCIBlock->data[j] = srcGCIBlock->data[j] ^ j ^ xorKey;
 
 		uint32_t modCtr = (xorKey & 3) + 1;
-		uint8_t decodedByte = (mode == DECODE ? destGCIBlock : srcGCIBlock)->data[j];
+		/* uint8_t decodedByte = (mode == DECODE ? destGCIBlock : srcGCIBlock)->data[j]; */
+		uint8_t decodedByte = (srcFileType == GCI_FILE_TYPE_ENCODED ? destGCIBlock : srcGCIBlock)->data[j];
 		*checksum = (long long)(*checksum + decodedByte);
 		xorKey = xorKey ^ j ^ decodedByte;
 		xorKey = (long long)(xorKey >> modCtr) | ((long long)xorKey << (long long)(0x20 - modCtr));
@@ -31,7 +33,8 @@ bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *check
 
 	/* printf("%u %u\n", *checksum, sig); */
 	/* fflush(stdout); */
-	if (mode == DECODE) {
+	if (srcFileType == GCI_FILE_TYPE_ENCODED) {
+	/* if (mode == DECODE) { */
 		destGCIBlock->sig = srcGCIBlock->sig;
 		uint32_t sig = be32toh(destGCIBlock->sig);
 		return sig == *checksum;
@@ -41,7 +44,7 @@ bool convertBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *check
 	}
 }
 
-bool convertFile(GCISaveFile *dest, GCISaveFile *src, uint32_t initChecksum, ConvertMode mode) {
+bool convertFile(GCIFile *dest, GCIFile *src, uint32_t initChecksum, GCIFileType srcFileType) {
 	assert(dest != NULL);
 	assert(src != NULL);
 	memcpy(dest->header, src->header, HEADER_SIZE);
@@ -52,7 +55,7 @@ bool convertFile(GCISaveFile *dest, GCISaveFile *src, uint32_t initChecksum, Con
 		if (2 * i == GCI_NUM_BLOCKS - 1) {
 			checksum = initChecksum;
 		}
-		if (convertBlock(&dest->gameBlocks[i], &src->gameBlocks[i], &checksum, mode) == 0) {
+		if (convertBlock(&dest->gameBlocks[i], &src->gameBlocks[i], &checksum, srcFileType) == 0) {
 			return 0;
 		}
 	}
@@ -60,7 +63,7 @@ bool convertFile(GCISaveFile *dest, GCISaveFile *src, uint32_t initChecksum, Con
 	return 1;
 }
 
-bool readGCIFile(GCISaveFile *data, char *inFileName) {
+bool readGCIFile(GCIFile *data, char *inFileName) {
 	assert(data != NULL);
 	assert(inFileName != NULL);
 
@@ -79,7 +82,7 @@ bool readGCIFile(GCISaveFile *data, char *inFileName) {
 	return bytesRead == GCI_FILE_SIZE;
 }
 
-bool writeGCIFile(GCISaveFile *data, char *outFileName) {
+bool writeGCIFile(GCIFile *data, char *outFileName) {
 	assert(data != NULL);
 	assert(outFileName != NULL);
 
@@ -97,4 +100,18 @@ bool writeGCIFile(GCISaveFile *data, char *outFileName) {
 
 	fclose(output);
 	return bytesWritten == GCI_FILE_SIZE;
+}
+
+bool initGCIMeta(GCIMeta *meta, char *fileName, GCIFileType fileType, uint32_t initChecksum) {
+	meta->fileName = strdup(fileName);
+	meta->fileType = fileType;
+	meta->initChecksum = initChecksum;
+	meta->file = malloc(GCI_FILE_SIZE);
+	assert(meta->fileName != NULL && meta->file != NULL);
+	return readGCIFile(meta->file, meta->fileName);
+}
+
+void destroyGCIMeta(GCIMeta *meta) {
+	free(meta->fileName);
+	free(meta->file);
 }
