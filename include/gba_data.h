@@ -36,9 +36,12 @@ static_assert(GBA_SAVE_PAIR_SIZE
 #define GBA_CHARACTER_NEIL	0
 #define GBA_CHARACTER_ELLA	1
 
+#define SHOTTYPE_DRAW	0
+#define SHOTTYPE_FADE	1
+
 typedef struct {
 	int8_t height;
-	uint8_t type;	/* 0=fade, 1=draw*/
+	uint8_t type;
 	uint8_t curve;
 	int8_t impact;
 	int8_t control;
@@ -51,7 +54,7 @@ typedef struct {
 	uint16_be driveDistance;
 	uint8_t icon;
 	uint8_t isLefty;
-	uint8_t unused;
+	uint8_t unusedOne;
 	ShotAttributes shot;
 	uint8_t endPad[0x7];
 } GBACharacterData;

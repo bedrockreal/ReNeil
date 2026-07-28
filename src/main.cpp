@@ -62,11 +62,11 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 
 		ImGui::TableSetColumnIndex(0); // Move to the first column
 		ImGui::Text("Shot Type:");
-		if (ImGui::RadioButton("Fade", character->shot.type == 0)) {
-				character->shot.type = 0;
+		if (ImGui::RadioButton("Draw", character->shot.type == SHOTTYPE_DRAW)) {
+				character->shot.type = SHOTTYPE_DRAW;
 		}
-		if (ImGui::RadioButton("Draw", character->shot.type == 1)) {
-				character->shot.type = 1;
+		if (ImGui::RadioButton("Fade", character->shot.type == SHOTTYPE_FADE)) {
+				character->shot.type = SHOTTYPE_FADE;
 		}
 
 		ImGui::TableSetColumnIndex(1); // Move to the second column

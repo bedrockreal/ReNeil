@@ -74,8 +74,10 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	// set Neil's default stats
 	strcpy(pair->neil.name, "Neil");
 	set_be16(&pair->neil.driveDistance, 205);
+	pair->neil.icon = GBA_CHARACTER_NEIL;
+	pair->neil.unusedOne = 0x01;
 	pair->neil.shot.height = -1;
-	pair->neil.shot.type = 1;
+	pair->neil.shot.type = SHOTTYPE_DRAW;
 	pair->neil.shot.curve = 2;
 	pair->neil.shot.impact = 4;
 	pair->neil.shot.control = 4;
@@ -84,8 +86,10 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	// set Ella's default stats
 	strcpy(pair->ella.name, "Ella");
 	set_be16(&pair->ella.driveDistance, 200);
+	pair->ella.icon = GBA_CHARACTER_ELLA;
+	pair->ella.unusedOne = 0x01;
 	pair->ella.shot.height = 3;
-	pair->ella.shot.type = 1;
+	pair->ella.shot.type = SHOTTYPE_DRAW;
 	pair->ella.shot.curve = 0;
 	pair->ella.shot.impact = 5;
 	pair->ella.shot.control = 6;
