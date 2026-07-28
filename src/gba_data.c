@@ -19,14 +19,14 @@ const char *GBA_DEFAULT_TAUNTS[GBA_NUM_TAUNTS] = {
 };
 
 const char *GBA_TAUNT_CONTROLLER_STRING[GBA_NUM_TAUNTS] = {
-	"Control stick up",
-	"Control stick down",
-	"Control stick left",
-	"Control stick right",
-	"C stick up",
-	"C stick down",
-	"C stick left",
-	"C stick right"
+	"Control Stick Up",
+	"Control Stick Down",
+	"Control Stick Left",
+	"Control Stick Right",
+	"C Stick Up",
+	"C Stick Down",
+	"C Stick Left",
+	"C Stick Right"
 };
 
 const char *GBA_CUSTOM_CLUB_NAME[GBA_NUM_CUSTOM_CLUBS] = {
