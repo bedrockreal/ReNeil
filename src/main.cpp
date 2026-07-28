@@ -268,14 +268,22 @@ int main(int argc, char** argv) {
 	// save data-related
 	GCIPair loadedGCIPair;
 	GBASavePair loadedGBAPairs[MAX_GBA_SAVE_PAIRS];
+	uint8_t savedGBAData[GBA_DATA_SIZE];
 
 	// lambdas
-	auto handleOpenFile = [&loadedGCIPair, &loadedGBAPairs, &initChecksum, &openedPath](std::string filename) {
+	auto handleOpenFile = [
+		&loadedGCIPair,
+		&loadedGBAPairs,
+		&initChecksum,
+		&openedPath,
+		&savedGBAData
+	](std::string filename) {
 		loadedGCIPair.init(filename, initChecksum);
 		bool ret = loadedGCIPair.isInitSuccess();
 		if (ret) {
 			openedPath = filename;
 			loadedGCIPair.getDecodedData(loadedGBAPairs, GBA_OFFSET_PAL, GBA_DATA_SIZE);
+			memcpy(savedGBAData, loadedGBAPairs, GBA_DATA_SIZE);
 		}
 		return ret;
 	};
@@ -408,7 +416,12 @@ int main(int argc, char** argv) {
 			ImGui::EndMainMenuBar();
 		}
 
-		ImGui::Begin("Main Window", NULL, ImGuiWindowFlags_NoTitleBar);
+		ImGuiWindowFlags mainWindowFlags = ImGuiWindowFlags_None;
+		if (openedPath.has_value() && memcmp(&loadedGBAPairs, &savedGBAData, GBA_DATA_SIZE) != 0) {
+			mainWindowFlags |= ImGuiWindowFlags_UnsavedDocument;
+		}
+
+		ImGui::Begin("Main Window", NULL, mainWindowFlags);
 		if (loadedGCIPair.isInitSuccess()) {
 			if (ImGui::BeginTabBar("GBATabBar", ImGuiTabBarFlags_None)) {
 				int activeGBAPairMask = 0;
