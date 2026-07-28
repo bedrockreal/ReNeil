@@ -442,11 +442,11 @@ int main(int argc, char** argv) {
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Edit"))
-			{
-				if (ImGui::MenuItem("Undo", "Ctrl+Z")) { /* Handle action */ }
-				ImGui::EndMenu();
-			}
+			// if (ImGui::BeginMenu("Edit"))
+			// {
+			// 	if (ImGui::MenuItem("Undo", "Ctrl+Z")) { /* Handle action */ }
+			// 	ImGui::EndMenu();
+			// }
 			ImGui::EndMainMenuBar();
 		}
 
