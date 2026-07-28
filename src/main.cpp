@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_main.h>
 #include "gci_pair.hpp"
 #include "imgui/imgui.h"
@@ -314,12 +315,61 @@ int main(int argc, char** argv) {
 
 	// the main loop
     while (appState.running) {
+		struct {
+			bool open = 0;
+			bool save = 0;
+			bool saveAs = 0;
+			bool close = 0;
+			bool exit = 0;
+		} uiAction;
 		SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_QUIT) {
                 appState.running = false;
             }
+
+			// Key down (no repeat to avoid retrigger spam)
+				if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
+					// SDL3 modifier state from this event
+					const SDL_Keymod mods = static_cast<SDL_Keymod>(event.key.mod);
+					const bool ctrlOrCmd =
+#if defined(__APPLE__)
+						(mods & SDL_KMOD_GUI) != 0;   // Command on macOS
+#else
+						(mods & SDL_KMOD_CTRL) != 0;  // Ctrl on Windows/Linux
+#endif
+
+					// Optional: don't fire app shortcuts while ImGui wants keyboard
+					ImGuiIO& io = ImGui::GetIO();
+					if (io.WantCaptureKeyboard) {
+						continue;
+					}
+
+					// Key symbol
+					const SDL_Keycode key = event.key.key;
+
+					// Ctrl/Cmd + O => Open
+					if (ctrlOrCmd && key == SDLK_O) {
+						uiAction.open = 1;
+					}
+					// Ctrl/Cmd + Shift + S => Save As
+					else if (ctrlOrCmd && (mods & SDL_KMOD_SHIFT) && key == SDLK_S) {
+						uiAction.saveAs = 1;
+					}
+					// Ctrl/Cmd + S => Save
+					else if (ctrlOrCmd && key == SDLK_S) {
+						uiAction.save = 1;
+					}
+					// Ctrl/Cmd + W => Close file
+					else if (ctrlOrCmd && key == SDLK_W) {
+						uiAction.close = 1;
+					}
+					// Ctrl/Cmd + Q => Exit
+					else if (ctrlOrCmd && key == SDLK_Q) {
+						uiAction.exit = 1;
+					}
+				}
         }
 
         // Consume dialog callback result (if any), safely
@@ -381,64 +431,21 @@ int main(int argc, char** argv) {
 			if (ImGui::BeginMenu("File"))
 			{
 				if (ImGui::MenuItem("Open", "Ctrl+O")) {
-					if (!appState.openDialogPending) {
-						appState.openDialogPending = true;
-						status = "Opening open dialog...";
-
-						// Asynchronous native open dialog
-						// Parameters:
-						// callback, userdata, parent window, filters, num filters,
-						// default location, allow_many
-						SDL_ShowOpenFileDialog(
-							OpenFileDialogCallback,
-							&dialogState,
-							window,
-							filters,
-							static_cast<int>(SDL_arraysize(filters)),
-							nullptr,
-							false
-						);
-					} else {
-						status = "Dialog already open/pending.";
-					}
+					uiAction.open = 1;
 				}
 				if (ImGui::MenuItem("Save", "Ctrl+S")) {
-					if (loadedGCIPair.isInitSuccess()) {
-						assert(openedPath.has_value());
-						handleSaveFile(openedPath.value());
-					}
+					uiAction.save = 1;
 				}
 				if (ImGui::MenuItem("Save As..")) {
-					if (loadedGCIPair.isInitSuccess()) {
-						assert(openedPath.has_value());
-						if (!appState.saveDialogPending) {
-							appState.saveDialogPending = true;
-							status = "Opening save dialog...";
-
-							// default_location can be nullptr or a folder/file hint
-							SDL_ShowSaveFileDialog(
-								SaveFileDialogCallback,
-								&dialogState,
-								window,
-								filters,
-								static_cast<int>(SDL_arraysize(filters)),
-								nullptr // default location
-							);
-						} else {
-							status = "Dialog already open/pending.";
-						}
-					} else {
-						status = "No file opened";
-					}
+					uiAction.saveAs = 1;
 				}
 				if (ImGui::MenuItem("Close", "Ctrl+W")) {
-					loadedGCIPair.close();
+					uiAction.close = 1;
 				}
 
 				ImGui::Separator();
 				if (ImGui::MenuItem("Exit", "Ctrl+Q")) {
-					// loadedGCIPair.close();
-					appState.running = 0;
+					uiAction.exit = 1;
 				}
 				ImGui::EndMenu();
 			}
@@ -448,6 +455,65 @@ int main(int argc, char** argv) {
 			// 	ImGui::EndMenu();
 			// }
 			ImGui::EndMainMenuBar();
+		}
+
+		// handle UI actions (triggered by menu or shortcut)
+		if (uiAction.open) {
+			if (!appState.openDialogPending) {
+				appState.openDialogPending = true;
+				status = "Opening open dialog...";
+
+				// Asynchronous native open dialog
+				// Parameters:
+				// callback, userdata, parent window, filters, num filters,
+				// default location, allow_many
+				SDL_ShowOpenFileDialog(
+					OpenFileDialogCallback,
+					&dialogState,
+					window,
+					filters,
+					static_cast<int>(SDL_arraysize(filters)),
+					nullptr,
+					false
+				);
+			} else {
+				status = "Dialog already open/pending.";
+			}
+		}
+		if (uiAction.save) {
+			if (loadedGCIPair.isInitSuccess()) {
+				assert(openedPath.has_value());
+				handleSaveFile(openedPath.value());
+			}
+		}
+		if (uiAction.saveAs) {
+			if (loadedGCIPair.isInitSuccess()) {
+				assert(openedPath.has_value());
+				if (!appState.saveDialogPending) {
+					appState.saveDialogPending = true;
+					status = "Opening save dialog...";
+
+					// default_location can be nullptr or a folder/file hint
+					SDL_ShowSaveFileDialog(
+						SaveFileDialogCallback,
+						&dialogState,
+						window,
+						filters,
+						static_cast<int>(SDL_arraysize(filters)),
+						nullptr // default location
+					);
+				} else {
+					status = "Dialog already open/pending.";
+				}
+			} else {
+				status = "No file opened";
+			}
+		}
+		if (uiAction.close) {
+			loadedGCIPair.close();
+		}
+		if (uiAction.exit) {
+			appState.running = 0;
 		}
 
 		ImGuiWindowFlags mainWindowFlags = ImGuiWindowFlags_None;
