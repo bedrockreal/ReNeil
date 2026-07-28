@@ -190,6 +190,14 @@ static void handleInvalidArgs(char *programName) {
 	exit(1);
 }
 
+static std::string getFileNameFromPath(std::string path) {
+	int i = path.rfind('/');
+	if (i == std::string::npos) {
+		return path;
+	}
+	return path.substr(i + 1, path.length() - i - 1);
+}
+
 int main(int argc, char** argv) {
 	uint32_t initChecksum = 0x12345678;
 	if (argc != 1) {
@@ -395,12 +403,14 @@ int main(int argc, char** argv) {
 					}
 				}
 				if (ImGui::MenuItem("Save", "Ctrl+S")) {
-					if (openedPath.has_value()) {
+					if (loadedGCIPair.isInitSuccess()) {
+						assert(openedPath.has_value());
 						handleSaveFile(openedPath.value());
 					}
 				}
 				if (ImGui::MenuItem("Save As..")) {
-					if (openedPath.has_value()) {
+					if (loadedGCIPair.isInitSuccess()) {
+						assert(openedPath.has_value());
 						if (!appState.saveDialogPending) {
 							appState.saveDialogPending = true;
 							status = "Opening save dialog...";
@@ -426,7 +436,10 @@ int main(int argc, char** argv) {
 				}
 
 				ImGui::Separator();
-				if (ImGui::MenuItem("Exit", "Ctrl+Q")) { /* Handle action */ }
+				if (ImGui::MenuItem("Exit", "Ctrl+Q")) {
+					// loadedGCIPair.close();
+					appState.running = 0;
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Edit"))
@@ -444,6 +457,7 @@ int main(int argc, char** argv) {
 
 		ImGui::Begin("Main Window", NULL, mainWindowFlags);
 		if (loadedGCIPair.isInitSuccess()) {
+			assert(openedPath.has_value());
 			if (ImGui::BeginTabBar("GBATabBar", ImGuiTabBarFlags_None)) {
 				int activeGBAPairMask = 0;
 				int numActiveGBAPairs = 0;
@@ -457,8 +471,9 @@ int main(int argc, char** argv) {
 					}
 				}
 
-				if (ImGui::BeginTabItem("Summary"))
-                {
+				char summaryLabel[256];
+				sprintf(summaryLabel, "Summary - %s", getFileNameFromPath(*openedPath).c_str());
+				if (ImGui::BeginTabItem(summaryLabel)) {
 					ImGui::Text("Number of Active GBA Pairs: %d", numActiveGBAPairs);
 
 					ImGui::BeginDisabled(numActiveGBAPairs == MAX_GBA_SAVE_PAIRS);
