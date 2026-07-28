@@ -443,6 +443,11 @@ int main(int argc, char** argv) {
 							displayGBASavePair(&loadedGBAPairs[i]);
 							ImGui::EndTabItem();
 						}
+
+						// add delete button
+						if (ImGui::Button("Delete this pair")) {
+							GBADeletePair(&loadedGBAPairs[i]);
+						}
 					}
 				}
 
