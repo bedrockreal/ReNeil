@@ -44,20 +44,27 @@ bool GCIPair::isInitSuccess() {
 	return initSuccess;
 }
 
-std::vector<uint8_t> GCIPair::getDecodedData(int offset, int size) {
+void GCIPair::getDecodedData(void *result, int offset, int size) {
 	assert(offset >= 0 && offset + size <= GCI_BLOCK_BODY_SIZE * (GCI_NUM_BLOCKS - 1));
+	assert(result != nullptr);
 
-	std::vector<uint8_t> res(size);
 	for (int i = 0; i < size; ++i) {
 		int curBlock = (offset + i) / GCI_BLOCK_BODY_SIZE;
 		int curBlockOffset = (offset + i) % GCI_BLOCK_BODY_SIZE;
-		res[i] = decodedFile->gameBlocks[curBlock].data[curBlockOffset];
+		*((uint8_t *)result + i) = decodedFile->gameBlocks[curBlock].data[curBlockOffset];
+		// printf("%2x", *((uint8_t *)result + i));
 	}
-	return res;
+
+	// fflush(stdout);
+
+	// assert(*((uint8_t *)result + 0x10) == 'N');
+	// assert(*((uint8_t *)result + 0x11) == 'e');
+	// assert(*((uint8_t *)result + 0x12) == 'i');
+	// assert(*((uint8_t *)result + 0x13) == 'l');
 }
 
-void GCIPair::setDecodedData(std::vector<uint8_t> data, int offset, int size) {
-	assert(offset >= 0 && offset + size <= GCI_BLOCK_BODY_SIZE * (GCI_NUM_BLOCKS - 1) && data.size() == size);
+void GCIPair::setDecodedData(uint8_t *data, int offset, int size) {
+	assert(offset >= 0 && offset + size <= GCI_BLOCK_BODY_SIZE * (GCI_NUM_BLOCKS - 1) && data != nullptr);
 	for (int i = 0; i < size; ++i) {
 		int curBlock = (offset + i) / GCI_BLOCK_BODY_SIZE;
 		int curBlockOffset = (offset + i) % GCI_BLOCK_BODY_SIZE;

@@ -17,4 +17,6 @@ struct FileDialogState {
 
 void SDLCALL OpenFileDialogCallback(void* userdata, const char* const* filelist, int filter);
 
+void ImGuiSetDocking();
+
 #endif

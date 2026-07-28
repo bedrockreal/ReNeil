@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 extern "C" {
 #include "gci.h"
 }
@@ -16,8 +15,8 @@ struct GCIPair {
 		void init(std::string encodedFileName, uint32_t initChecksum);
 		bool isInitSuccess();
 
-		std::vector<uint8_t> getDecodedData(int offset, int size);
-		void setDecodedData(std::vector<uint8_t> data, int offset, int size);
+		void getDecodedData(void *result, int offset, int size);
+		void setDecodedData(uint8_t *data, int offset, int size);
 		bool saveEncodedFile(std::string filename);
 
 	private:

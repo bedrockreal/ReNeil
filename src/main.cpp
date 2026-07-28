@@ -16,13 +16,169 @@
 
 #include "sdl_utils.hpp"
 extern "C" {
+#include "boutiste.h"
 #include "gba_data.h"
 #include "gci.h"
 }
 
 #define GBA_OFFSET_PAL	0x9c78
 
-void handleInvalidArgs(char *programName) {
+static void displayGBACharacterData(GBACharacterData *character, uint8_t characterID, uint8_t *cssPrimaryCharacter) {
+	std::string defaultCharactername = (characterID == GBA_CHARACTER_NEIL ? "Neil" : "Ella");
+	ImGui::Text("%s's data", defaultCharactername.c_str());
+	ImGui::InputTextWithHint("Name",
+			defaultCharactername.c_str(),
+			character->name,
+			10);
+
+	// lefty checkbox
+	bool isLeftyBool = character->isLefty;
+	ImGui::Checkbox(("make lefty##" + defaultCharactername).c_str(), &isLeftyBool);
+	character->isLefty = isLeftyBool;
+
+	ImGui::SameLine();
+
+	// radio button to make this character primary
+	if (ImGui::RadioButton("Make primary", *cssPrimaryCharacter == characterID)) {
+		*cssPrimaryCharacter = characterID;
+	}
+
+	// shot attributes
+	ImGui::SeparatorText("Shot Attributes");
+
+	if (ImGui::BeginTable("##ShotAttribThreeColumnLayout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
+		ImGui::TableNextRow();
+
+		ImGui::TableSetColumnIndex(0); // Move to the first column
+		ImGui::Text("Shot Type:");
+		if (ImGui::RadioButton("Fade", character->shot.type == 0)) {
+				character->shot.type = 0;
+		}
+		if (ImGui::RadioButton("Draw", character->shot.type == 1)) {
+				character->shot.type = 1;
+		}
+
+		ImGui::TableSetColumnIndex(1); // Move to the second column
+		// drive distance
+		uint16_t driveDist = get_be16(character->driveDistance);
+		ImGui::InputScalar("Drive", ImGuiDataType_U16, &driveDist);
+		set_be16(&character->driveDistance, driveDist);
+
+		// shot height
+		ImGui::InputScalar("Height", ImGuiDataType_S8, &character->shot.height);
+
+		// curve
+		ImGui::InputScalar("Curve", ImGuiDataType_U8, &character->shot.curve);
+
+		// impaact, control, spin
+		ImGui::TableSetColumnIndex(2); // Move to the second column
+		ImGui::InputScalar("Impact", ImGuiDataType_S8, &character->shot.impact);
+		ImGui::InputScalar("Control", ImGuiDataType_S8, &character->shot.control);
+		ImGui::InputScalar("Spin", ImGuiDataType_S8, &character->shot.spin);
+
+		ImGui::EndTable();
+	}
+
+
+
+
+}
+
+static void displayTaunts(GBATaunt *taunts, int numTaunts, std::string labelPrefix) {
+	for (int i = 0; i < numTaunts; ++i) {
+		ImGui::InputTextMultiline(
+				getControllerString(&taunts[i]),
+				taunts[i].str,
+				0x40,
+				ImVec2(0, ImGui::GetTextLineHeight() * 2.5)
+				);
+	}
+}
+
+static void displayClubs(uint16_be *clubsData) {
+	uint16_t clubMask = get_be16(*clubsData);
+	bool isClubUnlocked[GBA_NUM_CUSTOM_CLUBS];
+	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
+		isClubUnlocked[i] = (clubMask & (1 << i));
+	}
+
+	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
+		ImGui::Checkbox(getCustomClubName(i), &isClubUnlocked[i]);
+	}
+
+	clubMask = 0;
+	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
+		if (isClubUnlocked[i]) {
+			clubMask += (1 << i);
+		}
+	}
+
+	set_be16(clubsData, clubMask);
+}
+
+static void displayGBASavePair(GBASavePair *pair) {
+	if (ImGui::TreeNodeEx("Character Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+		// two column layout to display Neil and Ella's data
+		if (ImGui::BeginTable("##CharacterTwoColumnLayout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0); // Move to the first column
+			displayGBACharacterData(&pair->neil,
+					GBA_CHARACTER_NEIL,
+					&pair->cssPrimaryCharacter);
+
+			ImGui::TableSetColumnIndex(1); // Move to the second column
+			displayGBACharacterData(&pair->ella,
+					GBA_CHARACTER_ELLA,
+					&pair->cssPrimaryCharacter);
+			ImGui::EndTable();
+		}
+
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNodeEx("Taunt Data (for primary character)", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::BeginTable("##TauntTwoColumnLayout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
+			ImGui::TableNextRow();
+
+			// taunts (0-3)
+			ImGui::TableSetColumnIndex(0); // Move to the first column
+			displayTaunts(pair->taunts, 4, "Taunt");
+
+			// cheers (4-7)
+			ImGui::TableSetColumnIndex(1); // Move to the second column
+			displayTaunts(&pair->taunts[4], 4, "Cheer");
+			ImGui::EndTable();
+		}
+
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNodeEx("Custom Club Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::BeginTable("##ClubThreeColumnLayout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
+			ImGui::TableNextRow();
+
+			// woods
+			ImGui::TableSetColumnIndex(0); // Move to the first column
+			ImGui::Text("Woods");
+			displayClubs(&pair->customWoodsBitmask);
+
+			// irons
+			ImGui::TableSetColumnIndex(1); // Move to the second column
+			ImGui::Text("Irons");
+			displayClubs(&pair->customIronsBitmask);
+			
+			// wedges
+			ImGui::TableSetColumnIndex(2); // Move to the third column
+			ImGui::Text("Wedges");
+			displayClubs(&pair->customWedgesBitmask);
+			ImGui::EndTable();
+		}
+
+		ImGui::TreePop();
+	}
+}
+
+static void handleInvalidArgs(char *programName) {
 	fprintf(stderr, "Usage:\t%s\n\t\t%s d|e <infile> <outfile> [init_checksum]\n", programName, programName);
 	exit(1);
 }
@@ -61,7 +217,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("SDL3 + ImGui File Open/Close",
+    SDL_Window* window = SDL_CreateWindow("ReNeil 0.0.1",
                                           900, 600,
                                           SDL_WINDOW_RESIZABLE);
     if (!window) {
@@ -82,6 +238,7 @@ int main(int argc, char** argv) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;   // Enable docking
     (void)io;
     ImGui::StyleColorsDark();
 
@@ -91,7 +248,6 @@ int main(int argc, char** argv) {
 
     FileDialogState dialogState;
     std::optional<std::string> openedPath;
-    std::string fileContent;
     std::string status = "No file opened.";
 
     // Optional filters
@@ -108,9 +264,8 @@ int main(int argc, char** argv) {
 	} appState;
 
 	// save data-related
-	GCIPair activeGCIPair;
-	std::vector<uint8_t> activeGBAPairs;
-	GBASavePair *activeGBATabs[4] = {nullptr, nullptr, nullptr, nullptr};
+	GCIPair loadedGCIPair;
+	GBASavePair loadedGBAPairs[MAX_GBA_SAVE_PAIRS];
 
     while (appState.running) {
 		SDL_Event event;
@@ -134,11 +289,10 @@ int main(int argc, char** argv) {
                     const std::string p = dialogState.selectedPath;
 
 					// read and decode GCI
-					activeGCIPair.init(p, initChecksum);
-					if (activeGCIPair.isInitSuccess()) {
+					loadedGCIPair.init(p, initChecksum);
+					if (loadedGCIPair.isInitSuccess()) {
 						status = "Opened: " + p;
-						activeGBAPairs = activeGCIPair.getDecodedData(GBA_OFFSET_PAL, GBA_CLUB_DATA_SIZE * MAX_GBA_SAVE_PAIRS);
-						// printf("%c%c%c%c\n", activeGBAPairs[0x10], activeGBAPairs[0x11], activeGBAPairs[0x12], activeGBAPairs[0x13]);
+						loadedGCIPair.getDecodedData(loadedGBAPairs, GBA_OFFSET_PAL, GBA_SAVE_PAIR_SIZE * MAX_GBA_SAVE_PAIRS);
 					} else {
                         status = "Failed to open: " + p;
                     }
@@ -152,6 +306,8 @@ int main(int argc, char** argv) {
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
+
+		ImGuiSetDocking();
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -194,7 +350,48 @@ int main(int argc, char** argv) {
 			ImGui::EndMainMenuBar();
 		}
 
-		// TODO: display GBA save data of loaded GCI file.
+		ImGui::Begin("Main Window", NULL, ImGuiWindowFlags_NoTitleBar);
+		if (loadedGCIPair.isInitSuccess()) {
+			if (ImGui::BeginTabBar("GBATabBar", ImGuiTabBarFlags_None)) {
+				int activeGBAPairMask = 0;
+				int numActiveGBAPairs = 0;
+				int firstInactiveGBAPair = -1;
+				for (int i = 0; i < MAX_GBA_SAVE_PAIRS; ++i) {
+					if (isGBAPairActive(&loadedGBAPairs[i])) {
+						activeGBAPairMask |= (1 << i);
+						numActiveGBAPairs++;
+					} else if (firstInactiveGBAPair == -1) {
+						firstInactiveGBAPair = i;
+					}
+				}
+
+				if (ImGui::BeginTabItem("Summary"))
+                {
+					ImGui::Text("Number of Active GBA Pairs: %d", numActiveGBAPairs);
+
+					ImGui::BeginDisabled(numActiveGBAPairs == MAX_GBA_SAVE_PAIRS);
+					if (ImGui::Button("Add Default Pair")) {
+						assert(firstInactiveGBAPair != -1);
+						GBAMakeDefaultPair(&loadedGBAPairs[firstInactiveGBAPair]);
+					}
+					ImGui::EndDisabled();
+                    ImGui::EndTabItem();
+                }
+
+				for (int i = 0; i < MAX_GBA_SAVE_PAIRS; ++i) {
+					if ((activeGBAPairMask & (1 << i)) != 0) {
+						std::string curTabName = "Save Pair #" + std::to_string(i + 1);
+						if (ImGui::BeginTabItem(curTabName.c_str())) {
+							displayGBASavePair(&loadedGBAPairs[i]);
+							ImGui::EndTabItem();
+						}
+					}
+				}
+
+                ImGui::EndTabBar();
+			}
+		}
+		ImGui::End();
 
         // Render
         ImGui::Render();
