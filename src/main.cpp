@@ -192,7 +192,12 @@ static void handleInvalidArgs(char *programName) {
 }
 
 static std::string getFileNameFromPath(std::string path) {
+#if defined (_WIN32)
+	int i = path.rfind('\\');
+#else
 	int i = path.rfind('/');
+#endif
+
 	if (i == std::string::npos) {
 		return path;
 	}
