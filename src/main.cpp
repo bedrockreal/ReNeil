@@ -288,8 +288,13 @@ int main(int argc, char** argv) {
 		return ret;
 	};
 
-	auto handleSaveFile = [&loadedGCIPair, &loadedGBAPairs](std::string filename) {
+	auto handleSaveFile = [
+		&loadedGCIPair,
+		&loadedGBAPairs,
+		&savedGBAData
+	](std::string filename) {
 		loadedGCIPair.setDecodedData(&loadedGBAPairs, GBA_OFFSET_PAL, GBA_DATA_SIZE);
+		memcpy(savedGBAData, loadedGBAPairs, GBA_DATA_SIZE);
 		return loadedGCIPair.saveEncodedFile(filename);
 	};
 
@@ -308,6 +313,7 @@ int main(int argc, char** argv) {
             std::lock_guard<std::mutex> lock(dialogState.mtx);
 			// check open file state
             if (dialogState.openHasResult) {
+				// std::cerr << "open start" << std::endl;
                 dialogState.openHasResult = false;
                 appState.openDialogPending = false;
 
@@ -325,6 +331,7 @@ int main(int argc, char** argv) {
                 } else {
                     status = "No file selected.";
                 }
+				// std::cerr << "open end" << std::endl;
             }
 
 			// check save file state
@@ -387,23 +394,31 @@ int main(int argc, char** argv) {
 					}
 				}
 				if (ImGui::MenuItem("Save As..")) {
-					if (!appState.saveDialogPending) {
-						appState.saveDialogPending = true;
-						status = "Opening save dialog...";
+					if (openedPath.has_value()) {
+						if (!appState.saveDialogPending) {
+							appState.saveDialogPending = true;
+							status = "Opening save dialog...";
 
-						// default_location can be nullptr or a folder/file hint
-						SDL_ShowSaveFileDialog(
-							SaveFileDialogCallback,
-							&dialogState,
-							window,
-							filters,
-							static_cast<int>(SDL_arraysize(filters)),
-							nullptr // default location
-						);
+							// default_location can be nullptr or a folder/file hint
+							SDL_ShowSaveFileDialog(
+								SaveFileDialogCallback,
+								&dialogState,
+								window,
+								filters,
+								static_cast<int>(SDL_arraysize(filters)),
+								nullptr // default location
+							);
+						} else {
+							status = "Dialog already open/pending.";
+						}
 					} else {
-						status = "Dialog already open/pending.";
+						status = "No file opened";
 					}
 				}
+				if (ImGui::MenuItem("Close", "Ctrl+W")) {
+					loadedGCIPair.close();
+				}
+
 				ImGui::Separator();
 				if (ImGui::MenuItem("Exit", "Ctrl+Q")) { /* Handle action */ }
 				ImGui::EndMenu();
@@ -454,12 +469,12 @@ int main(int argc, char** argv) {
 						std::string curTabName = "Save Pair #" + std::to_string(i + 1);
 						if (ImGui::BeginTabItem(curTabName.c_str())) {
 							displayGBASavePair(&loadedGBAPairs[i]);
-							ImGui::EndTabItem();
-						}
 
-						// add delete button
-						if (ImGui::Button("Delete this pair")) {
-							GBADeletePair(&loadedGBAPairs[i]);
+							// add delete button
+							if (ImGui::Button("Delete this pair")) {
+								GBADeletePair(&loadedGBAPairs[i]);
+							}
+							ImGui::EndTabItem();
 						}
 					}
 				}

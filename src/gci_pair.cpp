@@ -1,12 +1,16 @@
 #include "gci_pair.hpp"
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 
 extern "C" {
 #include "gci.h"
 }
 
-GCIPair::GCIPair() {}
+GCIPair::GCIPair() {
+	encodedFile = nullptr;
+	decodedFile = nullptr;
+}
 
 GCIPair::GCIPair(std::string encodedFileName, uint32_t initChecksum) {
 	encodedFile = nullptr;
@@ -15,10 +19,7 @@ GCIPair::GCIPair(std::string encodedFileName, uint32_t initChecksum) {
 }
 
 GCIPair::~GCIPair() {
-	free(encodedFile);
-	free(decodedFile);
-	encodedFile = nullptr;
-	decodedFile = nullptr;
+	close();
 }
 
 void GCIPair::init(std::string encodedFileName, uint32_t initChecksum) {
@@ -30,6 +31,9 @@ void GCIPair::init(std::string encodedFileName, uint32_t initChecksum) {
 	if (decodedFile == nullptr) {
 		decodedFile = static_cast<GCIFile *>(malloc(sizeof(GCIFile)));
 	}
+
+	assert(encodedFile != nullptr);
+	assert(decodedFile != nullptr);
 
 	if (readGCIFile(encodedFile, encodedFileName.c_str()) == 0) {
 		initSuccess = 0;
@@ -80,4 +84,18 @@ bool GCIPair::saveEncodedFile(std::string filename) {
 		return 0;
 	}
 	return writeGCIFile(encodedFile, encodedFileName.c_str());
+}
+
+void GCIPair::close() {
+	// std:: cerr << "close start" << std::endl;
+	initSuccess = 0;
+	if (encodedFile != nullptr) {
+		free(encodedFile);
+	}
+	if (decodedFile != nullptr) {
+		free(decodedFile);
+	}
+	encodedFile = nullptr;
+	decodedFile = nullptr;
+	// std:: cerr << "close end" << std::endl;
 }
