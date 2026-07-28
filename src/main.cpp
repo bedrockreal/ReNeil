@@ -25,26 +25,35 @@ extern "C" {
 #define GBA_DATA_SIZE	(GBA_SAVE_PAIR_SIZE) * (MAX_GBA_SAVE_PAIRS)
 
 static void displayGBACharacterData(GBACharacterData *character, uint8_t characterID, uint8_t *cssPrimaryCharacter) {
-	std::string defaultCharactername = (characterID == GBA_CHARACTER_NEIL ? "Neil" : "Ella");
-	ImGui::Text("%s's data", defaultCharactername.c_str());
-	ImGui::InputTextWithHint("Name",
-			defaultCharactername.c_str(),
+	assert(characterID == GBA_CHARACTER_NEIL || characterID == GBA_CHARACTER_ELLA);
+	char defaultCharacterName[5];
+	strcpy(defaultCharacterName, characterID == GBA_CHARACTER_NEIL ? "Neil" : "Ella");
+
+	ImGui::Text("%s's data", defaultCharacterName);
+
+	char buf[128];
+	sprintf(buf, "Name##%s", defaultCharacterName);
+	ImGui::InputTextWithHint(buf,
+			defaultCharacterName,
 			character->name,
 			10);
 
 	// lefty checkbox
+	sprintf(buf, "make lefty##%s", defaultCharacterName);
 	bool isLeftyBool = character->isLefty;
-	ImGui::Checkbox(("make lefty##" + defaultCharactername).c_str(), &isLeftyBool);
+	ImGui::Checkbox(buf, &isLeftyBool);
 	character->isLefty = isLeftyBool;
 
 	ImGui::SameLine();
 
 	// radio button to make this character primary
-	if (ImGui::RadioButton("Make primary", *cssPrimaryCharacter == characterID)) {
+	sprintf(buf, "Make primary##%s", defaultCharacterName);
+	if (ImGui::RadioButton(buf, *cssPrimaryCharacter == characterID)) {
 		*cssPrimaryCharacter = characterID;
 	}
 
 	// shot attributes
+	// sprintf(buf, "Shot Attributes##%s", defaultCharacterName);
 	ImGui::SeparatorText("Shot Attributes");
 
 	if (ImGui::BeginTable("##ShotAttribThreeColumnLayout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
@@ -79,10 +88,6 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 
 		ImGui::EndTable();
 	}
-
-
-
-
 }
 
 static void displayTaunts(GBATaunt *taunts, int numTaunts, std::string labelPrefix) {
@@ -91,20 +96,24 @@ static void displayTaunts(GBATaunt *taunts, int numTaunts, std::string labelPref
 				getControllerString(&taunts[i]),
 				taunts[i].str,
 				0x40,
-				ImVec2(0, ImGui::GetTextLineHeight() * 2.5)
+				ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing())
 				);
 	}
 }
 
-static void displayClubs(uint16_be *clubsData) {
-	uint16_t clubMask = get_be16(*clubsData);
+static void displayClubs(uint16_be *clubData, const char *clubType) {
+	ImGui::Text("%s", clubType);
+
+	uint16_t clubMask = get_be16(*clubData);
 	bool isClubUnlocked[GBA_NUM_CUSTOM_CLUBS];
 	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
 		isClubUnlocked[i] = (clubMask & (1 << i));
 	}
 
 	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
-		ImGui::Checkbox(getCustomClubName(i), &isClubUnlocked[i]);
+		char buf[64];
+		sprintf(buf, "%s##%s", getCustomClubName(i), clubType);
+		ImGui::Checkbox(buf, &isClubUnlocked[i]);
 	}
 
 	clubMask = 0;
@@ -114,7 +123,7 @@ static void displayClubs(uint16_be *clubsData) {
 		}
 	}
 
-	set_be16(clubsData, clubMask);
+	set_be16(clubData, clubMask);
 }
 
 static void displayGBASavePair(GBASavePair *pair) {
@@ -160,18 +169,15 @@ static void displayGBASavePair(GBASavePair *pair) {
 
 			// woods
 			ImGui::TableSetColumnIndex(0); // Move to the first column
-			ImGui::Text("Woods");
-			displayClubs(&pair->customWoodsBitmask);
+			displayClubs(&pair->customWoodsBitmask, "Woods");
 
 			// irons
 			ImGui::TableSetColumnIndex(1); // Move to the second column
-			ImGui::Text("Irons");
-			displayClubs(&pair->customIronsBitmask);
+			displayClubs(&pair->customIronsBitmask, "Irons");
 			
 			// wedges
 			ImGui::TableSetColumnIndex(2); // Move to the third column
-			ImGui::Text("Wedges");
-			displayClubs(&pair->customWedgesBitmask);
+			displayClubs(&pair->customWedgesBitmask, "Wedges");
 			ImGui::EndTable();
 		}
 
