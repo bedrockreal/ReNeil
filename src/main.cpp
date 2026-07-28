@@ -91,7 +91,8 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 	}
 }
 
-static void displayTaunts(GBATaunt *taunts, int numTaunts, std::string labelPrefix) {
+static void displayTaunts(GBATaunt *taunts, int numTaunts, const char *label) {
+	ImGui::Text("%s", label);
 	for (int i = 0; i < numTaunts; ++i) {
 		ImGui::InputTextMultiline(
 				getControllerString(&taunts[i]),
@@ -153,11 +154,11 @@ static void displayGBASavePair(GBASavePair *pair) {
 
 			// taunts (0-3)
 			ImGui::TableSetColumnIndex(0); // Move to the first column
-			displayTaunts(pair->taunts, 4, "Taunt");
+			displayTaunts(pair->taunts, 4, "Taunts");
 
 			// cheers (4-7)
 			ImGui::TableSetColumnIndex(1); // Move to the second column
-			displayTaunts(&pair->taunts[4], 4, "Cheer");
+			displayTaunts(&pair->taunts[4], 4, "Cheers");
 			ImGui::EndTable();
 		}
 
@@ -193,9 +194,9 @@ static void handleInvalidArgs(char *programName) {
 
 static std::string getFileNameFromPath(std::string path) {
 #if defined (_WIN32)
-	int i = path.rfind('\\');
+	size_t i = path.rfind('\\');
 #else
-	int i = path.rfind('/');
+	size_t i = path.rfind('/');
 #endif
 
 	if (i == std::string::npos) {

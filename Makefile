@@ -3,8 +3,8 @@
 CC	:= gcc
 CXX	:= g++
 
-CFLAGS		:= -std=c23
-CXXFLAGS	:= -std=c++17
+CFLAGS		:= -std=c23 -Wall -Wextra
+CXXFLAGS	:= -std=c++17 -Wall -Wextra
 LDFLAGS		:= -lSDL3 -Llib -limgui
 
 TARGET_EXEC := reneil
