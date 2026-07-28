@@ -9,21 +9,42 @@ void SDLCALL OpenFileDialogCallback(void* userdata, const char* const* filelist,
     auto* state = static_cast<FileDialogState*>(userdata);
     std::lock_guard<std::mutex> lock(state->mtx);
 
-    state->hasResult = true;
-    state->canceled = false;
-    state->selectedPath.clear();
+    state->openHasResult = true;
+    state->openCanceled = false;
+    state->openSelectedPath.clear();
     state->error.clear();
 
     if (!filelist) {
-        state->canceled = true; // typically user canceled
+        state->openCanceled = true; // typically user canceled
         return;
     }
 
     // filelist is null-terminated; first element is selected file for single-select
     if (filelist[0]) {
-        state->selectedPath = filelist[0];
+        state->openSelectedPath = filelist[0];
     } else {
-        state->canceled = true;
+        state->openCanceled = true;
+    }
+}
+
+void SDLCALL SaveFileDialogCallback(void* userdata, const char* const* filelist, int filter) {
+    (void)filter;
+    auto* state = static_cast<FileDialogState*>(userdata);
+
+    std::lock_guard<std::mutex> lock(state->mtx);
+    state->saveHasResult = true;
+    state->saveCanceled = false;
+    state->saveSelectedPath.clear();
+
+    if (!filelist) {
+        state->saveCanceled = true; // canceled
+        return;
+    }
+
+    if (filelist[0]) {
+        state->saveSelectedPath = filelist[0];
+    } else {
+        state->saveCanceled = true;
     }
 }
 

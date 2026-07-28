@@ -22,6 +22,7 @@ extern "C" {
 }
 
 #define GBA_OFFSET_PAL	0x9c78
+#define GBA_DATA_SIZE	(GBA_SAVE_PAIR_SIZE) * (MAX_GBA_SAVE_PAIRS)
 
 static void displayGBACharacterData(GBACharacterData *character, uint8_t characterID, uint8_t *cssPrimaryCharacter) {
 	std::string defaultCharactername = (characterID == GBA_CHARACTER_NEIL ? "Neil" : "Ella");
@@ -260,6 +261,7 @@ int main(int argc, char** argv) {
 	struct {
 		bool running = 1;
 		bool openDialogPending = 0;
+		bool saveDialogPending = 0;
 		bool isDecodedGCIActive = 0;
 	} appState;
 
@@ -267,6 +269,23 @@ int main(int argc, char** argv) {
 	GCIPair loadedGCIPair;
 	GBASavePair loadedGBAPairs[MAX_GBA_SAVE_PAIRS];
 
+	// lambdas
+	auto handleOpenFile = [&loadedGCIPair, &loadedGBAPairs, &initChecksum, &openedPath](std::string filename) {
+		loadedGCIPair.init(filename, initChecksum);
+		bool ret = loadedGCIPair.isInitSuccess();
+		if (ret) {
+			openedPath = filename;
+			loadedGCIPair.getDecodedData(loadedGBAPairs, GBA_OFFSET_PAL, GBA_DATA_SIZE);
+		}
+		return ret;
+	};
+
+	auto handleSaveFile = [&loadedGCIPair, &loadedGBAPairs](std::string filename) {
+		loadedGCIPair.setDecodedData(&loadedGBAPairs, GBA_OFFSET_PAL, GBA_DATA_SIZE);
+		return loadedGCIPair.saveEncodedFile(filename);
+	};
+
+	// the main loop
     while (appState.running) {
 		SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -279,20 +298,19 @@ int main(int argc, char** argv) {
         // Consume dialog callback result (if any), safely
         {
             std::lock_guard<std::mutex> lock(dialogState.mtx);
-            if (dialogState.hasResult) {
-                dialogState.hasResult = false;
+			// check open file state
+            if (dialogState.openHasResult) {
+                dialogState.openHasResult = false;
                 appState.openDialogPending = false;
 
-                if (dialogState.canceled) {
+                if (dialogState.openCanceled) {
                     status = "Open file canceled.";
-                } else if (!dialogState.selectedPath.empty()) {
-                    const std::string p = dialogState.selectedPath;
+                } else if (!dialogState.openSelectedPath.empty()) {
+                    const std::string p = dialogState.openSelectedPath;
 
 					// read and decode GCI
-					loadedGCIPair.init(p, initChecksum);
-					if (loadedGCIPair.isInitSuccess()) {
+					if (handleOpenFile(p)) {
 						status = "Opened: " + p;
-						loadedGCIPair.getDecodedData(loadedGBAPairs, GBA_OFFSET_PAL, GBA_SAVE_PAIR_SIZE * MAX_GBA_SAVE_PAIRS);
 					} else {
                         status = "Failed to open: " + p;
                     }
@@ -300,6 +318,26 @@ int main(int argc, char** argv) {
                     status = "No file selected.";
                 }
             }
+
+			// check save file state
+			if (dialogState.saveHasResult) {
+				dialogState.saveHasResult = false;
+				appState.saveDialogPending = false;
+
+				if (dialogState.saveCanceled) {
+					status = "Save canceled.";
+				} else if (!dialogState.saveSelectedPath.empty()) {
+					const std::string outPath = dialogState.saveSelectedPath;
+					if (handleSaveFile(outPath)) {
+						openedPath = outPath; // optional: treat saved file as current file
+						status = "Saved: " + outPath;
+					} else {
+						status = "Failed to save: " + outPath;
+					}
+				} else {
+					status = "No save path selected.";
+				}
+			}
         }
 
         // Start ImGui frame
@@ -313,11 +351,10 @@ int main(int argc, char** argv) {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				// if (ImGui::MenuItem("New", "Ctrl+N")) { /* Handle action */ }
 				if (ImGui::MenuItem("Open", "Ctrl+O")) {
 					if (!appState.openDialogPending) {
 						appState.openDialogPending = true;
-						status = "Opening native file dialog...";
+						status = "Opening open dialog...";
 
 						// Asynchronous native open dialog
 						// Parameters:
@@ -336,8 +373,29 @@ int main(int argc, char** argv) {
 						status = "Dialog already open/pending.";
 					}
 				}
-				if (ImGui::MenuItem("Save", "Ctrl+S")) {}
-			if (ImGui::MenuItem("Save As..")) {}
+				if (ImGui::MenuItem("Save", "Ctrl+S")) {
+					if (openedPath.has_value()) {
+						handleSaveFile(openedPath.value());
+					}
+				}
+				if (ImGui::MenuItem("Save As..")) {
+					if (!appState.saveDialogPending) {
+						appState.saveDialogPending = true;
+						status = "Opening save dialog...";
+
+						// default_location can be nullptr or a folder/file hint
+						SDL_ShowSaveFileDialog(
+							SaveFileDialogCallback,
+							&dialogState,
+							window,
+							filters,
+							static_cast<int>(SDL_arraysize(filters)),
+							nullptr // default location
+						);
+					} else {
+						status = "Dialog already open/pending.";
+					}
+				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Exit", "Ctrl+Q")) { /* Handle action */ }
 				ImGui::EndMenu();

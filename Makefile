@@ -7,7 +7,7 @@ CFLAGS		:= -std=c23
 CXXFLAGS	:= -std=c++17
 LDFLAGS		:= -lSDL3 -Llib -limgui
 
-TARGET_EXEC := final_program
+TARGET_EXEC := reneil
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src

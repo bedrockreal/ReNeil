@@ -16,7 +16,7 @@ struct GCIPair {
 		bool isInitSuccess();
 
 		void getDecodedData(void *result, int offset, int size);
-		void setDecodedData(uint8_t *data, int offset, int size);
+		void setDecodedData(void *data, int offset, int size);
 		bool saveEncodedFile(std::string filename);
 
 	private:

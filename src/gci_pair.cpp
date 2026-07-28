@@ -63,12 +63,12 @@ void GCIPair::getDecodedData(void *result, int offset, int size) {
 	// assert(*((uint8_t *)result + 0x13) == 'l');
 }
 
-void GCIPair::setDecodedData(uint8_t *data, int offset, int size) {
+void GCIPair::setDecodedData(void *data, int offset, int size) {
 	assert(offset >= 0 && offset + size <= GCI_BLOCK_BODY_SIZE * (GCI_NUM_BLOCKS - 1) && data != nullptr);
 	for (int i = 0; i < size; ++i) {
 		int curBlock = (offset + i) / GCI_BLOCK_BODY_SIZE;
 		int curBlockOffset = (offset + i) % GCI_BLOCK_BODY_SIZE;
-		decodedFile->gameBlocks[curBlock].data[curBlockOffset] = data[i];
+		decodedFile->gameBlocks[curBlock].data[curBlockOffset] = *((uint8_t *)data + i);
 	}
 }
 
