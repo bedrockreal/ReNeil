@@ -1,6 +1,8 @@
 #ifndef RENEIL_GCI_H
 #define RENEIL_GCI_H
 
+#include "boutiste.h"
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,9 +19,9 @@ typedef enum {
 } GCIFileType;
 
 typedef struct {
-	uint32_t xorKey;
+	uint32_be xorKey;
 	uint8_t data[GCI_BLOCK_BODY_SIZE];
-	uint32_t sig;
+	uint32_be sig;
 } GCIBlock;
 
 typedef struct {

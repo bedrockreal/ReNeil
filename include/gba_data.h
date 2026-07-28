@@ -1,6 +1,7 @@
 #ifndef RENEIL_GBA_DATA_H
 #define RENEIL_GBA_DATA_H
 
+#include "boutiste.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -34,7 +35,7 @@ typedef struct {
 typedef struct {
 	uint8_t startPad[0x10];
 	char name[0xa];
-	uint8_t driveDist[2];
+	uint16_be driveDistance;
 	uint8_t icon;
 	uint8_t isLefty;
 	uint8_t unused;
@@ -56,16 +57,14 @@ typedef struct {
 	uint8_t unused4[GBA_UNUSED4_SIZE];
 	uint8_t pairOrder;
 	uint8_t unused1;
-	uint8_t customWoodsBitmask[2];
-	uint8_t customIronsBitmask[2];
-	uint8_t customWedgesBitmask[2];
+	uint16_be customWoodsBitmask;
+	uint16_be customIronsBitmask;
+	uint16_be customWedgesBitmask;
 } GBASavePair;
 
 static_assert(sizeof(ShotAttributes) == 0x6);
 static_assert(sizeof(GBACharacter) == GBA_CHARACTER_SIZE);
 static_assert(sizeof(GBATaunt) == GBA_TAUNT_SIZE);
 static_assert(sizeof(GBASavePair) == GBA_SAVE_PAIR_SIZE);
-
-
 
 #endif

@@ -1,45 +1,42 @@
+#include "boutiste.h"
 #define _DEFAULT_SOURCE
 
 #include "gci.h"
 
 #include <assert.h>
-#include <endian.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 bool convertGCIBlock(GCIBlock *destGCIBlock, GCIBlock *srcGCIBlock, uint32_t *checksum, GCIFileType srcFileType) {
 	assert(srcGCIBlock != NULL);
 	assert(destGCIBlock != NULL);
+	uint32_t xorKey = get_be32(srcGCIBlock->xorKey);
+	uint32_t sig = get_be32(srcGCIBlock->sig);
+	set_be32(&destGCIBlock->xorKey, xorKey);
 	destGCIBlock->xorKey = srcGCIBlock->xorKey;
 
-	uint32_t xorKey = be32toh(destGCIBlock->xorKey);
 	for (uint32_t j = 0; j < GCI_BLOCK_BODY_SIZE; ++j) {
 		destGCIBlock->data[j] = srcGCIBlock->data[j] ^ j ^ xorKey;
 
 		uint32_t modCtr = (xorKey & 3) + 1;
-		/* uint8_t decodedByte = (mode == DECODE ? destGCIBlock : srcGCIBlock)->data[j]; */
 		uint8_t decodedByte = (srcFileType == GCI_FILE_TYPE_ENCODED ? destGCIBlock : srcGCIBlock)->data[j];
 		*checksum = (long long)(*checksum + decodedByte);
 		xorKey = xorKey ^ j ^ decodedByte;
 		xorKey = (long long)(xorKey >> modCtr) | ((long long)xorKey << (long long)(0x20 - modCtr));
 		/* printf("%u %u %u\n", decodedByte, xorKey, modCtr); */
+		/* fflush(stdout); */
 	}
 
 	*checksum ^= xorKey;
 
-	/* printf("%u %u\n", *checksum, sig); */
-	/* fflush(stdout); */
 	if (srcFileType == GCI_FILE_TYPE_ENCODED) {
-	/* if (mode == DECODE) { */
-		destGCIBlock->sig = srcGCIBlock->sig;
-		uint32_t sig = be32toh(destGCIBlock->sig);
+		set_be32(&destGCIBlock->sig, sig);
 		return sig == *checksum;
 	} else {
-		destGCIBlock->sig = htobe32(*checksum);
+		set_be32(&destGCIBlock->sig, *checksum);
 		return 1;
 	}
 }
@@ -74,11 +71,10 @@ bool readGCIFile(GCIFile *data, const char *inFileName) {
 	}
 
 	int bytesRead = fread(&data->header, 1, GCI_FILE_SIZE, input);
-	/* for (int i = 0; i < GCI_NUM_BLOCKS - 1; ++i) { */
-	/* 	data->gameBlocks[i].xorKey = be32toh(data->gameBlocks[i].xorKey); */
-	/* 	data->gameBlocks[i].sig = be32toh(data->gameBlocks[i].sig); */
-	/* } */
 	fclose(input);
+	/* for (int i = 0; i < GCI_NUM_BLOCKS - 1; ++i) { */
+	/* 	printf("%u\n", get_be32(data->gameBlocks[i].sig)); */
+	/* } */
 	return bytesRead == GCI_FILE_SIZE;
 }
 
@@ -91,10 +87,6 @@ bool writeGCIFile(GCIFile *data, const char *outFileName) {
 		fprintf(stderr, "cannot open %s: %s\n", outFileName, strerror(errno));
 		return 0;
 	}
-
-	/* for (int i = 0; i < GCI_NUM_BLOCKS - 1; ++i) { */
-	/* 	data->gameBlocks[i].sig = htobe32(data->gameBlocks[i].sig); */
-	/* 	data->gameBlocks[i].xorKey = htobe32(data->gameBlocks); */
 
 	int bytesWritten = fwrite(&data->header, 1, GCI_FILE_SIZE, output);
 
