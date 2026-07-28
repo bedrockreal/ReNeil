@@ -109,6 +109,17 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	set_be16(&pair->customWedgesBitmask, 0xffff);
 }
 
+void GBACopyPair(GBASavePair *dest, GBASavePair *src) {
+	memcpy(dest, src, GBA_SAVE_PAIR_SIZE);
+}
+
+void GBASwapPair(GBASavePair *p1, GBASavePair *p2) {
+	GBASavePair tmp;
+	GBACopyPair(&tmp, p1);
+	GBACopyPair(p1, p2);
+	GBACopyPair(p2, &tmp);
+}
+
 void GBADeletePair(GBASavePair *pair) {
 	memset(pair, 0, GBA_SAVE_PAIR_SIZE);
 }

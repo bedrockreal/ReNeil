@@ -86,6 +86,8 @@ const char *getCustomClubName(int index);
 
 bool isGBAPairActive(GBASavePair *pair);
 void GBAMakeDefaultPair(GBASavePair *pair);
+void GBACopyPair(GBASavePair *dest, GBASavePair *src);
+void GBASwapPair(GBASavePair *p1, GBASavePair *p2);
 void GBADeletePair(GBASavePair *pair);
 
 #endif
