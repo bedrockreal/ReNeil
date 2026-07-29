@@ -9,7 +9,7 @@ You are advised to back up your save files before using this application to avoi
 
 ## Building
 1. Install [SDL3](https://github.com/libsdl-org/SDL/releases/tag/release-3.4.12) onto your system. This is a requirement by the application.
-2. Clone this repository recursively: `git clone --recursive-submodules https://github.com/bedrockreal/reneil`
+2. Clone this repository recursively: `git clone --recursive-submodules https://github.com/bedrockreal/ReNeil`
 3. Run `make`
 
 The executable is located at `build/reneil`.
