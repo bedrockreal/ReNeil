@@ -13,7 +13,7 @@
 #define GBA_TAUNT_SIZE		0x42
 #define GBA_NUM_TAUNTS		8
 #define GBA_CHECK_SIZE			0x10
-#define GBA_UNUSED4_SIZE		0x04
+#define GBA_EXPERIENCE_SIZE		0x04
 #define GBA_CSS_ORDER_SIZE		0x01
 #define GBA_UNUSED1_SIZE		0x01
 #define GBA_NUM_CUSTOM_CLUBS	16
@@ -23,7 +23,7 @@ static_assert(GBA_SAVE_PAIR_SIZE
 		== GBA_NUM_CHARACTERS * GBA_CHARACTER_SIZE
 		+ GBA_NUM_TAUNTS * GBA_TAUNT_SIZE
 		+ GBA_CHECK_SIZE
-		+ GBA_UNUSED4_SIZE
+		+ GBA_EXPERIENCE_SIZE
 		+ GBA_CSS_ORDER_SIZE
 		+ GBA_UNUSED1_SIZE
 		+ GBA_CLUB_DATA_SIZE);
@@ -70,7 +70,7 @@ typedef struct {
 	GBACharacterData ella;
 	GBATaunt taunts[8];
 	uint8_t check[0x10];
-	uint8_t unused4[GBA_UNUSED4_SIZE];
+	uint16_be experience[2];
 	uint8_t cssPrimaryCharacter;
 	uint8_t unused1;
 	uint16_be customWoodsBitmask;

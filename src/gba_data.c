@@ -75,6 +75,7 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	strcpy(pair->neil.name, "Neil");
 	set_be16(&pair->neil.driveDistance, 205);
 	pair->neil.icon = GBA_CHARACTER_NEIL;
+	pair->neil.isLefty = 0;
 	pair->neil.unusedOne = 0x01;
 	pair->neil.shot.height = -1;
 	pair->neil.shot.type = SHOTTYPE_DRAW;
@@ -87,6 +88,7 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	strcpy(pair->ella.name, "Ella");
 	set_be16(&pair->ella.driveDistance, 200);
 	pair->ella.icon = GBA_CHARACTER_ELLA;
+	pair->ella.isLefty = 0;
 	pair->ella.unusedOne = 0x01;
 	pair->ella.shot.height = 3;
 	pair->ella.shot.type = SHOTTYPE_DRAW;
@@ -104,6 +106,10 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	
 	// make this pair active
 	memset(&pair->check, 0xff, GBA_CHECK_SIZE);
+
+	// reset experience
+	set_be16(&pair->experience[GBA_CHARACTER_NEIL], 0);
+	set_be16(&pair->experience[GBA_CHARACTER_ELLA], 0);
 
 	// CSSOrder = 0 already, no need modify
 

@@ -25,7 +25,7 @@ extern "C" {
 #define GBA_OFFSET_PAL	0x9c78
 #define GBA_DATA_SIZE	(GBA_SAVE_PAIR_SIZE) * (MAX_GBA_SAVE_PAIRS)
 
-static void displayGBACharacterData(GBACharacterData *character, uint8_t characterID, uint8_t *cssPrimaryCharacter) {
+static void displayGBACharacterData(GBACharacterData *character, uint8_t characterID, uint8_t *cssPrimaryCharacter, uint16_be *characterExp) {
 	assert(characterID == GBA_CHARACTER_NEIL || characterID == GBA_CHARACTER_ELLA);
 	char defaultCharacterName[5];
 	strcpy(defaultCharacterName, characterID == GBA_CHARACTER_NEIL ? "Neil" : "Ella");
@@ -39,7 +39,8 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 			character->name,
 			10);
 
-	// skin
+	// skin (unused)
+	/*
 	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 	uint8_t skinCtr = character->icon;
 	sprintf(buf, "##skinLeft%s", defaultCharacterName);
@@ -57,6 +58,14 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 	ImGui::Text("skin");
 	skinCtr %= (MAX_GBA_SAVE_PAIRS * 2);
 	character->icon = skinCtr;
+	*/
+
+	// experience
+	ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x / 3.f);
+	uint16_t characterExpHost = get_be16(*characterExp);
+	sprintf(buf, "Experience##%s", defaultCharacterName);
+	ImGui::InputScalar(buf, ImGuiDataType_U16, &characterExpHost);
+	set_be16(characterExp, characterExpHost);
 
 	// lefty checkbox
 	ImGui::SameLine();
@@ -72,6 +81,8 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 	if (ImGui::RadioButton(buf, *cssPrimaryCharacter == characterID)) {
 		*cssPrimaryCharacter = characterID;
 	}
+
+	ImGui::PopItemWidth();
 
 	// shot attributes
 	// sprintf(buf, "Shot Attributes##%s", defaultCharacterName);
@@ -156,12 +167,14 @@ static void displayGBASavePair(GBASavePair *pair) {
 			ImGui::TableSetColumnIndex(0); // Move to the first column
 			displayGBACharacterData(&pair->neil,
 					GBA_CHARACTER_NEIL,
-					&pair->cssPrimaryCharacter);
+					&pair->cssPrimaryCharacter,
+					&pair->experience[GBA_CHARACTER_NEIL]);
 
 			ImGui::TableSetColumnIndex(1); // Move to the second column
 			displayGBACharacterData(&pair->ella,
 					GBA_CHARACTER_ELLA,
-					&pair->cssPrimaryCharacter);
+					&pair->cssPrimaryCharacter,
+					&pair->experience[GBA_CHARACTER_ELLA]);
 			ImGui::EndTable();
 		}
 
