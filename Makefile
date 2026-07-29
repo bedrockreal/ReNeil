@@ -5,7 +5,7 @@ CXX	:= g++
 
 CFLAGS		:= -std=c23 -Wall -Wextra
 CXXFLAGS	:= -std=c++17 -Wall -Wextra
-LDFLAGS		:= -lSDL3 -Llib -limgui
+LDFLAGS		:= -lSDL3
 
 TARGET_EXEC := reneil
 
@@ -15,6 +15,10 @@ SRC_DIRS := ./src
 # Find all the C and C++ files we want to compile
 # Note the single quotes around the * expressions. The shell will incorrectly expand these otherwise, but we want to send the * directly to the find command.
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
+
+IMGUI_DIR := include/imgui
+SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
+SRCS += $(IMGUI_DIR)/backends/imgui_impl_sdl3.cpp $(IMGUI_DIR)/backends/imgui_impl_sdlrenderer3.cpp
 
 # Prepends BUILD_DIR and appends .o to every src file
 # As an example, ./your_dir/hello.cpp turns into ./build/./your_dir/hello.cpp.o
