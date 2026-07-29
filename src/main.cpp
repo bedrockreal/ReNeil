@@ -39,7 +39,27 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 			character->name,
 			10);
 
+	// skin
+	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+	uint8_t skinCtr = character->icon;
+	sprintf(buf, "##skinLeft%s", defaultCharacterName);
+	if (ImGui::ArrowButton(buf, ImGuiDir_Left)) {
+		skinCtr -= 2;
+	}
+	ImGui::SameLine(0.0f, spacing);
+	ImGui::Text("%u", character->icon);
+	ImGui::SameLine(0.0f, spacing);
+	sprintf(buf, "##skinRight%s", defaultCharacterName);
+    if (ImGui::ArrowButton(buf, ImGuiDir_Right)) {
+		skinCtr += 2;
+	}
+	ImGui::SameLine(0.0f, spacing);
+	ImGui::Text("skin");
+	skinCtr %= (MAX_GBA_SAVE_PAIRS * 2);
+	character->icon = skinCtr;
+
 	// lefty checkbox
+	ImGui::SameLine();
 	sprintf(buf, "make lefty##%s", defaultCharacterName);
 	bool isLeftyBool = character->isLefty;
 	ImGui::Checkbox(buf, &isLeftyBool);
