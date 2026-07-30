@@ -142,21 +142,27 @@ static void displayClubs(uint16_be *clubData, const char *clubType) {
 	ImGui::Text("%s", clubType);
 
 	uint16_t clubMask = get_be16(*clubData);
-	bool isClubUnlocked[GBA_NUM_CUSTOM_CLUBS];
+	uint16_t iMask = 1;
+	char buf[64];
 	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
-		isClubUnlocked[i] = (clubMask & (1 << i));
-	}
-
-	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
-		char buf[64];
+		bool isCurrentClubUnlocked = (clubMask & iMask);
 		sprintf(buf, "%s##%s", getCustomClubName(i), clubType);
-		ImGui::Checkbox(buf, &isClubUnlocked[i]);
+		ImGui::Checkbox(buf, &isCurrentClubUnlocked);
+		if (isCurrentClubUnlocked) {
+			clubMask |= iMask;
+		} else {
+			clubMask &= ~iMask;
+		}
+		iMask <<= 1;
 	}
 
-	clubMask = 0;
-	for (int i = 0; i < GBA_NUM_CUSTOM_CLUBS; ++i) {
-		if (isClubUnlocked[i]) {
-			clubMask += (1 << i);
+	// add 'toggle all' button
+	sprintf(buf, "Toggle all##%s", clubType);
+	if (ImGui::Button(buf)) {
+		if (clubMask == (uint16_t)(-1)) {
+			clubMask = 0;
+		} else {
+			clubMask = (uint16_t)(-1);
 		}
 	}
 
@@ -228,6 +234,13 @@ static void displayGBASavePair(GBASavePair *pair) {
 
 		ImGui::TreePop();
 	}
+
+	// add delete button
+	// ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(255, 0, 0, 0));
+	if (ImGui::Button("Delete This Pair")) {
+		GBADeletePair(pair);
+	}
+	// ImGui::PopStyleColor();
 }
 
 static void handleInvalidArgs(char *programName) {
@@ -606,10 +619,6 @@ int main(int argc, char** argv) {
 						if (ImGui::BeginTabItem(curTabName.c_str())) {
 							displayGBASavePair(&loadedGBAPairs[i]);
 
-							// add delete button
-							if (ImGui::Button("Delete this pair")) {
-								GBADeletePair(&loadedGBAPairs[i]);
-							}
 							ImGui::EndTabItem();
 						}
 					}
