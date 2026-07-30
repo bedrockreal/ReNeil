@@ -186,6 +186,12 @@ static void displayGBASavePair(GBASavePair *pair) {
 	}
 
 	if (ImGui::TreeNodeEx("Taunt Data (for primary character)", ImGuiTreeNodeFlags_DefaultOpen)) {
+		// add 'set default' button
+
+		if (ImGui::Button("Set default##taunts")) {
+			GBASetDefaultTaunts(pair);
+		}
+
 		if (ImGui::BeginTable("##TauntTwoColumnLayout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerH)) {
 			ImGui::TableNextRow();
 

@@ -91,6 +91,7 @@ const char *getControllerString(GBATaunt *taunt);
 const char *getCustomClubName(int index);
 
 bool isGBAPairActive(GBASavePair *pair);
+void GBASetDefaultTaunts(GBASavePair *pair);
 void GBAMakeDefaultPair(GBASavePair *pair);
 void GBACopyPair(GBASavePair *dest, GBASavePair *src);
 void GBASwapPair(GBASavePair *p1, GBASavePair *p2);

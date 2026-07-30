@@ -7,7 +7,8 @@
 #define GBA_DEFAULT_CSS_ORDER	0x00 /* Neil is primary */
 
 
-const char *GBA_DEFAULT_TAUNTS[GBA_NUM_TAUNTS] = {
+const char *GBA_DEFAULT_TAUNTS[2][GBA_NUM_TAUNTS] = {
+	// Neil's taunts
 	"Whoa...",					/* Control stick up */
 	"You gotta hit this!",		/* Control stick down */
 	"You better nail it!",		/* Control stick left */
@@ -15,7 +16,17 @@ const char *GBA_DEFAULT_TAUNTS[GBA_NUM_TAUNTS] = {
 	"You can do it!",			/* C stick up */
 	"Looking good!",			/* C stick down */
 	"Think happy\x01thoughts!",	/* C stick left */
-	"Watch the ball!"			/* C stick right */
+	"Watch the ball!",			/* C stick right */
+
+	// Ella's taunts
+	"Keep your\x01head down!",	/* Control stick up */
+	"Watch your elbows!",		/* Control stick down */
+	"Don't overthink it!",		/* Control stick left */
+	"Are you\x01gonna swing?",	/* Control stick right */
+	"Good luck!",				/* C stick up */
+	"Swing like\x01you always do!",	/* C stick down */
+	"Don't worry!\x01You'll do fine!",	/* C stick left */
+	"Let's go!"					/* C stick right */
 };
 
 const char *GBA_TAUNT_CONTROLLER_STRING[GBA_NUM_TAUNTS] = {
@@ -74,6 +85,16 @@ bool isGBAPairActive(GBASavePair *pair) {
 	return 0;
 }
 
+void GBASetDefaultTaunts(GBASavePair *pair) {
+	uint8_t p = pair->cssPrimaryCharacter;
+	assert(p == 0 || p == 1);
+	for (int i = 0; i < GBA_NUM_TAUNTS; ++i) {
+		strcpy(pair->taunts[i].str, GBA_DEFAULT_TAUNTS[p][i]);
+		pair->taunts[i].type = (i < 4 ? 1 : 0);
+		pair->taunts[i].index = i;
+	}
+}
+
 void GBAMakeDefaultPair(GBASavePair *pair) {
 	GBADeletePair(pair);
 
@@ -103,13 +124,6 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	pair->ella.shot.control = 6;
 	pair->ella.shot.spin = 0;
 
-	// setup taunts
-	for (int i = 0; i < GBA_NUM_TAUNTS; ++i) {
-		strcpy(pair->taunts[i].str, GBA_DEFAULT_TAUNTS[i]);
-		pair->taunts[i].type = (i < 4 ? 1 : 0);
-		pair->taunts[i].index = i;
-	}
-	
 	// make this pair active
 	memset(&pair->check, 0xff, GBA_CHECK_SIZE);
 
@@ -123,6 +137,9 @@ void GBAMakeDefaultPair(GBASavePair *pair) {
 	set_be16(&pair->customWoodsBitmask, 0xffff);
 	set_be16(&pair->customIronsBitmask, 0xffff);
 	set_be16(&pair->customWedgesBitmask, 0xffff);
+
+	// setup taunts
+	GBASetDefaultTaunts(pair);
 }
 
 void GBACopyPair(GBASavePair *dest, GBASavePair *src) {
