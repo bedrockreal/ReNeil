@@ -122,15 +122,19 @@ static void displayGBACharacterData(GBACharacterData *character, uint8_t charact
 	}
 }
 
-static void displayTaunts(GBATaunt *taunts, int numTaunts, const char *label) {
-	ImGui::Text("%s", label);
+static void displayTaunts(GBATaunt *taunts, int numTaunts, const char *type) {
+	ImGui::Text("%s", type);
+	char buf[GBA_TAUNT_SIZE];
 	for (int i = 0; i < numTaunts; ++i) {
+		// change \x01 to \n for display, then revert back to \x01
+		strReplace(buf, taunts[i].str, GBA_TAUNT_SIZE, '\x01', '\n');
 		ImGui::InputTextMultiline(
 				getControllerString(&taunts[i]),
-				taunts[i].str,
+				buf,
 				0x40,
 				ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing())
 				);
+		strReplace(taunts[i].str, buf, GBA_TAUNT_SIZE, '\n', '\x01');
 	}
 }
 

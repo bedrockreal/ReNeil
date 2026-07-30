@@ -48,6 +48,12 @@ const char *GBA_CUSTOM_CLUB_NAME[GBA_NUM_CUSTOM_CLUBS] = {
 	"Risky"
 };
 
+void strReplace(char *dest, const char *src, int n, char from, char to) {
+	for (int i = 0; i < n; ++i) {
+		dest[i] = (src[i] == from ? to : src[i]);
+	}
+}
+
 const char *getControllerString(GBATaunt *taunt) {
 	return GBA_TAUNT_CONTROLLER_STRING[taunt->index];
 }

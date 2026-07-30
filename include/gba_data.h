@@ -84,6 +84,9 @@ static_assert(sizeof(GBACharacterData) == GBA_CHARACTER_SIZE);
 static_assert(sizeof(GBATaunt) == GBA_TAUNT_SIZE);
 static_assert(sizeof(GBASavePair) == GBA_SAVE_PAIR_SIZE);
 
+// fix newline issue (\x01 vs. \n)
+void strReplace(char *dest, const char *src, int n, char from, char to);
+
 const char *getControllerString(GBATaunt *taunt);
 const char *getCustomClubName(int index);
 
